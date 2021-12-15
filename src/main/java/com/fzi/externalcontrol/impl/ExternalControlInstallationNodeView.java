@@ -63,7 +63,7 @@ public class ExternalControlInstallationNodeView
   }
 
   public void UpdatePortTextField(Integer value) {
-    textFieldPort.setText(String.format(LENGTH_FORMAT, value));
+    textFieldPort.setText(Integer.toString(value));
   }
 
   public void UpdateNameTextField(String value) {
@@ -97,7 +97,7 @@ public class ExternalControlInstallationNodeView
     box.add(label);
     // create port Textfield
     textFieldPort = new JTextField(15);
-    textFieldPort.setText(String.format(LENGTH_FORMAT,contribution.getCustomPort()));
+    textFieldPort.setText(Integer.toString(contribution.getCustomPort()));
     textFieldPort.setFocusable(false);
     textFieldPort.addMouseListener(new MouseAdapter() {
       @Override
