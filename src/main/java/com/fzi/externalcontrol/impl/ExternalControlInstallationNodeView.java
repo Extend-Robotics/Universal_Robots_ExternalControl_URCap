@@ -28,6 +28,7 @@ package com.fzi.externalcontrol.impl;
 
 import com.ur.urcap.api.contribution.installation.swing.SwingInstallationNodeView;
 import com.ur.urcap.api.domain.userinteraction.keyboard.KeyboardTextInput;
+import com.ur.urcap.api.domain.userinteraction.keyboard.KeyboardNumberInput;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -43,6 +44,7 @@ public class ExternalControlInstallationNodeView
   private JTextField textFieldIP;
   private JTextField textFieldPort;
   private JTextField textFieldName;
+  private static final String LENGTH_FORMAT = "%1$,d";
 
   public ExternalControlInstallationNodeView() {}
 
@@ -60,8 +62,8 @@ public class ExternalControlInstallationNodeView
     textFieldIP.setText(value);
   }
 
-  public void UpdatePortTextField(String value) {
-    textFieldPort.setText(value);
+  public void UpdatePortTextField(Integer value) {
+    textFieldPort.setText(String.format(LENGTH_FORMAT, value));
   }
 
   public void UpdateNameTextField(String value) {
@@ -95,12 +97,12 @@ public class ExternalControlInstallationNodeView
     box.add(label);
     // create port Textfield
     textFieldPort = new JTextField(15);
-    textFieldPort.setText(contribution.getCustomPort());
+    textFieldPort.setText(String.format(LENGTH_FORMAT,contribution.getCustomPort()));
     textFieldPort.setFocusable(false);
     textFieldPort.addMouseListener(new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
-        KeyboardTextInput keyboardInput = contribution.getInputForPortTextField();
+        KeyboardNumberInput<Integer> keyboardInput = contribution.getInputForPortTextField();
         keyboardInput.show(textFieldPort, contribution.getCallbackForPortTextField());
       }
     });

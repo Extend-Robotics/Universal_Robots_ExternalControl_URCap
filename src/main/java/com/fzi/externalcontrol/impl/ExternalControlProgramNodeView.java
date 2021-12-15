@@ -165,7 +165,7 @@ public class ExternalControlProgramNodeView
     advancedParamsPanel.setVisible(visible);
   }
 
-  public void updateInfoLabel(String host_ip, String custom_port) {
+  public void updateInfoLabel(String host_ip, Integer custom_port) {
     infoLabel.setText("<html><body>"
         + "The program enabling external control is requested from the remote host.<br>"
         + "As to that, the parameters are currently set as follows: <br><br>"

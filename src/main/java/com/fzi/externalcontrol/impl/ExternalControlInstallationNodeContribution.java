@@ -33,13 +33,14 @@ import com.ur.urcap.api.domain.script.ScriptWriter;
 import com.ur.urcap.api.domain.userinteraction.keyboard.KeyboardInputCallback;
 import com.ur.urcap.api.domain.userinteraction.keyboard.KeyboardInputFactory;
 import com.ur.urcap.api.domain.userinteraction.keyboard.KeyboardTextInput;
+import com.ur.urcap.api.domain.userinteraction.keyboard.KeyboardNumberInput;
 
 public class ExternalControlInstallationNodeContribution implements InstallationNodeContribution {
   private static final String HOST_IP = "host_ip";
   private static final String PORT_NR = "port_nr";
   private static final String NAME = "name";
   private static final String DEFAULT_IP = "192.168.56.1";
-  private static final String DEFAULT_PORT = "50002";
+  private static final Integer DEFAULT_PORT = 50002;
   private static final String DEFAULT_NAME = DEFAULT_IP;
   private DataModel model;
   private final ExternalControlInstallationNodeView view;
@@ -88,7 +89,7 @@ public class ExternalControlInstallationNodeContribution implements Installation
   }
 
   public KeyboardTextInput getInputForIPTextField() {
-    KeyboardTextInput keyboInput = keyboardFactory.createStringKeyboardInput();
+    KeyboardTextInput keyboInput = keyboardFactory.createIPAddressKeyboardInput();
     keyboInput.setInitialValue(getHostIP());
     return keyboInput;
   }
@@ -104,7 +105,7 @@ public class ExternalControlInstallationNodeContribution implements Installation
   }
 
   // port helper functions
-  public void setHostPort(String port) {
+  public void setHostPort(Integer port) {
     if ("".equals(port)) {
       resetToDefaultPort();
     } else {
@@ -112,7 +113,7 @@ public class ExternalControlInstallationNodeContribution implements Installation
     }
   }
 
-  public String getCustomPort() {
+  public Integer getCustomPort() {
     return model.get(PORT_NR, DEFAULT_PORT);
   }
 
@@ -120,16 +121,16 @@ public class ExternalControlInstallationNodeContribution implements Installation
     model.set(PORT_NR, DEFAULT_PORT);
   }
 
-  public KeyboardTextInput getInputForPortTextField() {
-    KeyboardTextInput keyboInput = keyboardFactory.createStringKeyboardInput();
+  public KeyboardNumberInput<Integer> getInputForPortTextField() {
+    KeyboardNumberInput<Integer> keyboInput = keyboardFactory.createIntegerKeypadInput();
     keyboInput.setInitialValue(getCustomPort());
     return keyboInput;
   }
 
-  public KeyboardInputCallback<String> getCallbackForPortTextField() {
-    return new KeyboardInputCallback<String>() {
+  public KeyboardInputCallback<Integer> getCallbackForPortTextField() {
+    return new KeyboardInputCallback<Integer>() {
       @Override
-      public void onOk(String value) {
+      public void onOk(Integer value) {
         setHostPort(value);
         view.UpdatePortTextField(value);
       }

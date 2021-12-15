@@ -46,9 +46,10 @@ public class RequestProgram {
   /*
    * Default constructor
    */
-  public RequestProgram(String hostIp, String portNr) {
+  public RequestProgram(String hostIp, Integer portNr) {
     this.hostIp = hostIp;
-    this.portNr = Integer.parseInt(portNr);
+    //this.portNr = Integer.parseInt(portNr);
+    this.portNr = portNr;
     this.header = "";
     this.controlLoop = "";
   }
