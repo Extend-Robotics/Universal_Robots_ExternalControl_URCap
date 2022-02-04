@@ -49,6 +49,10 @@ public class ExternalControlProgramNodeContribution implements ProgramNodeContri
   private final ExternalControlProgramNodeView view;
   private final KeyboardInputFactory keyboardFactory;
   private final UndoRedoManager undoRedoManager;
+  private String control_loop;     //NSChange Added new Variable to hold the string 
+  private static String SERVER_IP_REPLACE = "{{SERVER_IP_REPLACE}}";
+  private static final String REVERSE_SOCKET = "reverse_socket";
+  private static String SERVER_PORT_REPLACE = "{{SERVER_PORT_REPLACE}}";
 
   public ExternalControlProgramNodeContribution(
       ProgramAPIProvider apiProvider, ExternalControlProgramNodeView view, DataModel model) {
@@ -77,11 +81,50 @@ public class ExternalControlProgramNodeContribution implements ProgramNodeContri
   public boolean isDefined() {
     return true;
   }
-
+  //Add the Program method here
   @Override
   public void generateScript(ScriptWriter writer) {
-    String controlLoop = getInstallation().getControlLoop(writer);
-    writer.appendRaw(controlLoop);
+  // NSChanges Start
+    SERVER_IP_REPLACE = getInstallation().getHostIP();
+    SERVER_PORT_REPLACE = "50001";
+    writer.appendLine("socket_open(\"" + SERVER_IP_REPLACE + "\", " + SERVER_PORT_REPLACE +  ", \""+ REVERSE_SOCKET + "\")");
+    writer.appendLine("er_control_mode = MODE_UNINITIALIZED");
+    writer.appendLine("thread_move = 0");
+    writer.appendLine("global er_keepalive = -2");
+    writer.appendLine("params_mult = socket_read_binary_integer(1+6+1, \""+ REVERSE_SOCKET + "\", 0)");
+    writer.appendLine("er_keepalive = params_mult[1]");
+    writer.appendLine("while er_keepalive > 0 and er_control_mode > MODE_STOPPED:");
+    writer.appendLine("  enter_critical");
+    writer.appendLine("  params_mult = socket_read_binary_integer(1+6+1, \""+ REVERSE_SOCKET +"\", 0.02) # steptime could work as well, but does not work in simulation");
+    writer.appendLine("  if params_mult[0] > 0:");
+    writer.appendLine("    er_keepalive = params_mult[1]");
+    writer.appendLine("    if er_control_mode != params_mult[8]:");
+    writer.appendLine("      er_control_mode = params_mult[8]");
+    writer.appendLine("      join thread_move");
+    writer.appendLine("      if er_control_mode == MODE_SERVOJ:");
+    writer.appendLine("        thread_move = run servoThread()");
+    writer.appendLine("      elif er_control_mode == MODE_SPEEDJ:");
+    writer.appendLine("        thread_move = run speedThread()");
+    writer.appendLine("      end");
+    writer.appendLine("    end");
+    writer.appendLine("    if er_control_mode == MODE_SERVOJ:");
+    writer.appendLine("      q = [params_mult[2] / MULT_jointstate, params_mult[3] / MULT_jointstate, params_mult[4] / MULT_jointstate, params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate]");
+    writer.appendLine("      set_servo_setpoint(q)");
+    writer.appendLine("    elif er_control_mode == MODE_SPEEDJ:");
+    writer.appendLine("      qd = [params_mult[2] / MULT_jointstate, params_mult[3] / MULT_jointstate, params_mult[4] / MULT_jointstate, params_mult[5] / MULT_jointstate, params_mult[6] / MULT_jointstate, params_mult[7] / MULT_jointstate]");
+    writer.appendLine("      set_speed(qd)");
+    writer.appendLine("    end");
+    writer.appendLine("  else:");
+    writer.appendLine("    er_keepalive = er_keepalive - 1");
+    writer.appendLine("  end");
+    writer.appendLine("  exit_critical");
+    writer.appendLine("end");
+    writer.appendLine("er_control_mode = MODE_STOPPED");
+    writer.appendLine("join thread_move");
+    writer.appendLine("socket_close(\""+ REVERSE_SOCKET +"\")");
+    // String controlLoop = getInstallation().getControlLoop(writer);
+    // writer.appendRaw(controlLoop);
+    // NSChanges END
   }
 
   private ExternalControlInstallationNodeContribution getInstallation() {

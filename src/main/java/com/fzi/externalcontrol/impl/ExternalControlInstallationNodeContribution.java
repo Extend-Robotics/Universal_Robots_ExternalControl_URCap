@@ -46,7 +46,9 @@ public class ExternalControlInstallationNodeContribution implements Installation
   private final ExternalControlInstallationNodeView view;
   private final KeyboardInputFactory keyboardFactory;
   private RequestProgram sender;
-  private boolean programRequested;
+  private boolean programRequested;    
+  private String control_header;     //NSChange Added new Variable to hold the string 
+
 
   public ExternalControlInstallationNodeContribution(InstallationAPIProvider apiProvider,
       ExternalControlInstallationNodeView view, DataModel model) {
@@ -65,10 +67,101 @@ public class ExternalControlInstallationNodeContribution implements Installation
   public boolean isDefined() {
     return !getHostIP().isEmpty();
   }
-
+  //Add the Installation method here
   @Override
   public void generateScript(ScriptWriter writer) {
     programRequested = false;
+    //NSChange  Start 
+
+    writer.appendLine("steptime = get_steptime()");
+
+    writer.appendLine("MULT_jointstate = 1000000");
+
+    writer.appendLine("#Constants");
+    writer.appendLine("SERVO_UNINITIALIZED = -1");
+    writer.appendLine("SERVO_IDLE = 0");
+    writer.appendLine("SERVO_RUNNING = 1");
+
+    writer.appendLine("MODE_STOPPED = -2");
+    writer.appendLine("MODE_UNINITIALIZED = -1");
+    writer.appendLine("MODE_IDLE = 0");
+    writer.appendLine("MODE_SERVOJ = 1");
+    writer.appendLine("MODE_SPEEDJ = 2");
+
+    writer.appendLine("#Global variables are also showed in the Teach pendants variable list");
+    writer.appendLine("global er_cmd_servo_state = SERVO_UNINITIALIZED");
+    writer.appendLine("global er_cmd_servo_qd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]");
+    writer.appendLine("global er_cmd_servo_q = get_actual_joint_positions()");
+    writer.appendLine("global er_cmd_servo_q_last = get_actual_joint_positions()");
+    writer.appendLine("global er_extrapolate_count = 0");
+    writer.appendLine("global er_extrapolate_max_count = 0");
+    writer.appendLine("global er_control_mode = MODE_UNINITIALIZED");
+    writer.appendLine("cmd_speedj_active = True");
+
+    writer.appendLine("def set_servo_setpoint(q):");
+    writer.appendLine("  er_cmd_servo_state = SERVO_RUNNING");
+    writer.appendLine("  er_cmd_servo_q_last = er_cmd_servo_q");
+    writer.appendLine("  er_cmd_servo_q = q");
+    writer.appendLine("end");
+
+    writer.appendLine("def extrapolate():");
+    writer.appendLine("  diff = [er_cmd_servo_q[0] - er_cmd_servo_q_last[0], er_cmd_servo_q[1] - er_cmd_servo_q_last[1], er_cmd_servo_q[2] - er_cmd_servo_q_last[2], er_cmd_servo_q[3] - er_cmd_servo_q_last[3], er_cmd_servo_q[4] - er_cmd_servo_q_last[4], er_cmd_servo_q[5] - er_cmd_servo_q_last[5]]");
+    writer.appendLine("  er_cmd_servo_q_last = er_cmd_servo_q");
+    writer.appendLine("  er_cmd_servo_q = [er_cmd_servo_q[0] + diff[0], er_cmd_servo_q[1] + diff[1], er_cmd_servo_q[2] + diff[2], er_cmd_servo_q[3] + diff[3], er_cmd_servo_q[4] + diff[4], er_cmd_servo_q[5] + diff[5]]");
+
+    writer.appendLine("  return er_cmd_servo_q");
+    writer.appendLine("end");
+
+    writer.appendLine("thread servoThread():");
+    writer.appendLine("  state = SERVO_IDLE");
+    writer.appendLine("  while er_control_mode == MODE_SERVOJ:");
+    writer.appendLine("    enter_critical");
+    writer.appendLine("    q = er_cmd_servo_q");
+    writer.appendLine("    do_extrapolate = False");
+    writer.appendLine("    if (er_cmd_servo_state == SERVO_IDLE):");
+    writer.appendLine("      do_extrapolate = True");
+    writer.appendLine("    end");
+    writer.appendLine("    state = er_cmd_servo_state");
+    writer.appendLine("    if er_cmd_servo_state > SERVO_UNINITIALIZED:");
+    writer.appendLine("      er_cmd_servo_state = SERVO_IDLE");
+    writer.appendLine("    end");
+
+    writer.appendLine("    if do_extrapolate:");
+    writer.appendLine("      er_extrapolate_count = er_extrapolate_count + 1");
+    writer.appendLine("      if er_extrapolate_count > er_extrapolate_max_count:");
+    writer.appendLine("        er_extrapolate_max_count = er_extrapolate_count");
+    writer.appendLine("      end");
+
+    writer.appendLine("      q = extrapolate()");
+    writer.appendLine("      servoj(q, t=steptime, lookahead_time=0.05, gain=100)");
+
+    writer.appendLine("    elif state == SERVO_RUNNING:");
+    writer.appendLine("      er_extrapolate_count = 0");
+    writer.appendLine("      servoj(q, t=steptime, lookahead_time=0.05, gain=100)");
+    writer.appendLine("    else:");
+    writer.appendLine("      er_extrapolate_count = 0");
+    writer.appendLine("      sync()");
+    writer.appendLine("    end");
+    writer.appendLine("    exit_critical");
+    writer.appendLine("  end");
+    writer.appendLine("  stopj(4.0)");
+    writer.appendLine("end");
+
+    writer.appendLine("# Helpers for speed control");
+    writer.appendLine("def set_speed(qd):");
+    writer.appendLine("  er_cmd_servo_qd = qd");
+    writer.appendLine("  er_control_mode = MODE_SPEEDJ");
+    writer.appendLine("end");
+
+    writer.appendLine("thread speedThread():");
+    writer.appendLine("  while er_control_mode == MODE_SPEEDJ:");
+    writer.appendLine("    qd = er_cmd_servo_qd");
+    writer.appendLine("    speedj(qd, 40.0, steptime)");
+    writer.appendLine("  end");
+    writer.appendLine("  stopj(5.0)");
+    writer.appendLine("end");
+
+    //NSChange  End
   }
 
   // IP helper functions
